@@ -4,7 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication(builder => builder.UseMiddleware<PrincipalMiddleware>())
+    .ConfigureFunctionsWebApplication(builder =>
+    {
+        builder.UseMiddleware<ErrorMiddleware>();
+        builder.UseMiddleware<PrincipalMiddleware>();
+    })
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
