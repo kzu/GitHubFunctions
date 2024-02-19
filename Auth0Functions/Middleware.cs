@@ -1,7 +1,6 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Localization;
+﻿using System.Text;
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.Logging;
 
@@ -24,7 +23,7 @@ public class PrincipalFeature(ClaimsPrincipal principal, string? accessToken = d
     public string? AccessToken => accessToken;
 }
 
-public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<PrincipalMiddleware> logger) : IFunctionsWorkerMiddleware
+public class PrincipalMiddleware(ILogger<PrincipalMiddleware> logger) : IFunctionsWorkerMiddleware
 {
     static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
     static readonly ClaimsPrincipal empty = new(new ClaimsIdentity());
@@ -32,57 +31,29 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<Princip
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
         var req = await context.GetHttpRequestDataAsync();
+        if (req is not null && 
+            req.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value), StringComparer.OrdinalIgnoreCase) is var headers && 
+            headers.TryGetValue("host", out var host) && 
+            headers.TryGetValue("x-ms-client-principal", out var msclient) &&
+            Convert.FromBase64String(msclient) is var decoded && 
+            Encoding.UTF8.GetString(decoded) is var json &&
+            JsonSerializer.Deserialize<ClientPrincipal>(json, options) is { } cp)
+        {
+            var access_token = headers.TryGetValue($"x-ms-token-{cp.auth_typ}-access-token", out var token) ? token : default;
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                cp.user_claims.Select(c => new Claim(c.typ, c.val)),
+                cp.auth_typ));
 
-        if (req is not null)
+            context.Features.Set(new PrincipalFeature(principal, access_token));
+            await next(context);
+            return;
+        }
+        else if (req is not null)
         {
             foreach (var header in req.Headers)
             {
-                logger.LogInformation($"{header.Key} = {string.Join(',', header.Value)}");
+                logger.LogDebug("{Header} = {Value}", header.Key, string.Join(',', header.Value));
             }
-        }
-
-        //var resp = req!.CreateResponse();
-        //await resp.WriteStringAsync("yay");
-        //context.GetInvocationResult().Value = resp;
-
-        if (TryGetSessionFromHeaders(context, logger, out var headers, out var session) && 
-            headers.TryGetValue("Host", out var host))
-        {
-            using var http = httpFactory.CreateClient();
-            http.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", session);
-
-            var response = await http.GetAsync($"https://{host}/.auth/me");
-            if (response.IsSuccessStatusCode)
-            {
-                var token = await response.Content.ReadAsStringAsync();
-                var sessions = JsonSerializer.Deserialize<Session[]>(token, options);
-                if (sessions is { Length: > 0 })
-                {
-                    var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                        sessions[0].user_claims.Select(c => new Claim(c.typ, c.val)),
-                        sessions[0].provider_name));
-
-                    context.Features.Set(new PrincipalFeature(principal, sessions[0].access_token));
-                    await next(context);
-                    return;
-                }
-                else
-                {
-                    logger.LogWarning("Did not find expected user session");
-                }
-            }
-            else
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                if (string.IsNullOrEmpty(content))
-                    content = response.ReasonPhrase;
-
-                logger.LogWarning($"Failed to get user claims from session cookie: {response.StatusCode} ({content})");
-            }
-        }
-        else if (!headers.ContainsKey("Host"))
-        {
-            logger.LogWarning("Did not find expected Host header value");
         }
 
         context.Features.Set(new PrincipalFeature(empty));
@@ -90,32 +61,6 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<Princip
         return;
     }
 
-    static bool TryGetSessionFromHeaders(FunctionContext context, ILogger logger, out Dictionary<string, string> headers, out string? token)
-    {
-        token = default;
-
-        // HTTP headers are in the binding context as a JSON object
-        // The first checks ensure that we have the JSON string
-        if (!context.BindingContext.BindingData.TryGetValue("Headers", out var headersObj) ||
-            headersObj is not string headersStr ||
-            JsonSerializer.Deserialize<Dictionary<string, string>>(headersStr) is not { } headersDict)
-        {
-            headers = [];
-            logger.LogWarning("Could not deserialize request headers from binding data");
-            return false;
-        }
-
-        headers = new(headersDict, StringComparer.OrdinalIgnoreCase);
-
-        if (!headers.TryGetValue("AppServiceAuthSession", out token))
-        {
-            logger.LogWarning("Did not find expected AppServiceAuthSession header value");
-            return false;
-        }
-
-        return true;
-    }
-
-    record SessionClaim(string typ, string val);
-    record Session(string access_token, string provider_name, SessionClaim[] user_claims);
+    record ClientClaim(string typ, string val);
+    record ClientPrincipal(string auth_typ, ClientClaim[] user_claims);
 }
