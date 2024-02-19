@@ -2,18 +2,17 @@
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.Logging;
 
-public class ErrorMiddleware(ILogger<ErrorMiddleware> logger) : IFunctionsWorkerMiddleware
+public class ErrorMiddleware : IFunctionsWorkerMiddleware
 {
-    public Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
+    public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
         try
         {
-            return next(context);
+            await next(context);
         }
         catch (Exception e)
         {
-            logger.LogError(e, "An error occurred while processing the request.");
-            throw;
+            context.GetLogger<ErrorMiddleware>().LogError(e, "An error occurred while processing the request.");
         }
     }
 }
