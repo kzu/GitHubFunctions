@@ -12,7 +12,8 @@ public class ErrorMiddleware : IFunctionsWorkerMiddleware
         }
         catch (Exception e)
         {
-            context.GetLogger<ErrorMiddleware>().LogError(e, "An error occurred while processing the request.");
+            context.GetLogger<ErrorMiddleware>().LogError(e, "Exception: {Exception}", e.ToString());
+            throw;
         }
     }
 }
