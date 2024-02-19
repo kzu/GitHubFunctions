@@ -41,7 +41,7 @@ public class PrincipalMiddleware(ILogger<PrincipalMiddleware> logger) : IFunctio
         {
             var access_token = headers.TryGetValue($"x-ms-token-{cp.auth_typ}-access-token", out var token) ? token : default;
             var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                cp.user_claims.Select(c => new Claim(c.typ, c.val)),
+                cp.claims.Select(c => new Claim(c.typ, c.val)),
                 cp.auth_typ));
 
             context.Features.Set(new PrincipalFeature(principal, access_token));
@@ -62,5 +62,5 @@ public class PrincipalMiddleware(ILogger<PrincipalMiddleware> logger) : IFunctio
     }
 
     record ClientClaim(string typ, string val);
-    record ClientPrincipal(string auth_typ, ClientClaim[] user_claims);
+    record ClientPrincipal(string auth_typ, ClientClaim[] claims);
 }
