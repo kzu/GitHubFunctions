@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Functions.Worker.Middleware;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +31,20 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<Princip
 
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
+        var req = await context.GetHttpRequestDataAsync();
+
+        if (req is not null)
+        {
+            foreach (var header in req.Headers)
+            {
+                logger.LogInformation($"{header.Key} = {string.Join(',', header.Value)}");
+            }
+        }
+
+        //var resp = req!.CreateResponse();
+        //await resp.WriteStringAsync("yay");
+        //context.GetInvocationResult().Value = resp;
+
         if (TryGetSessionFromHeaders(context, logger, out var headers, out var session) && 
             headers.TryGetValue("Host", out var host))
         {
