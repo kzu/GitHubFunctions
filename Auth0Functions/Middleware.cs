@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Middleware;
+using Microsoft.Extensions.Logging;
 
 namespace System.Security.Claims;
 
@@ -21,13 +22,14 @@ public class PrincipalFeature(ClaimsPrincipal principal, string? accessToken = d
     public string? AccessToken => accessToken;
 }
 
-public class PrincipalMiddleware(IHttpClientFactory httpFactory) : IFunctionsWorkerMiddleware
+public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<PrincipalMiddleware> logger) : IFunctionsWorkerMiddleware
 {
-    static readonly ClaimsPrincipal empty = new ClaimsPrincipal(new ClaimsIdentity());
+    static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
+    static readonly ClaimsPrincipal empty = new(new ClaimsIdentity());
 
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
-        if (TryGetSessionFromHeaders(context, out var headers, out var session) && 
+        if (TryGetSessionFromHeaders(context, logger, out var headers, out var session) && 
             headers.TryGetValue("Host", out var host))
         {
             using var http = httpFactory.CreateClient();
@@ -37,7 +39,7 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory) : IFunctionsWor
             if (response.IsSuccessStatusCode)
             {
                 var token = await response.Content.ReadAsStringAsync();
-                var sessions = JsonSerializer.Deserialize<Session[]>(token, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+                var sessions = JsonSerializer.Deserialize<Session[]>(token, options);
                 if (sessions is { Length: > 0 })
                 {
                     var principal = new ClaimsPrincipal(new ClaimsIdentity(
@@ -48,7 +50,23 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory) : IFunctionsWor
                     await next(context);
                     return;
                 }
+                else
+                {
+                    logger.LogWarning("Did not find expected user session");
+                }
             }
+            else
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                if (string.IsNullOrEmpty(content))
+                    content = response.ReasonPhrase;
+
+                logger.LogWarning($"Failed to get user claims from session cookie: {response.StatusCode} ({content})");
+            }
+        }
+        else if (!headers.ContainsKey("Host"))
+        {
+            logger.LogWarning("Did not find expected Host header value");
         }
 
         context.Features.Set(new PrincipalFeature(empty));
@@ -56,7 +74,7 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory) : IFunctionsWor
         return;
     }
 
-    static bool TryGetSessionFromHeaders(FunctionContext context, out Dictionary<string, string> headers, out string? token)
+    static bool TryGetSessionFromHeaders(FunctionContext context, ILogger logger, out Dictionary<string, string> headers, out string? token)
     {
         token = default;
 
@@ -67,13 +85,17 @@ public class PrincipalMiddleware(IHttpClientFactory httpFactory) : IFunctionsWor
             JsonSerializer.Deserialize<Dictionary<string, string>>(headersStr) is not { } headersDict)
         {
             headers = [];
+            logger.LogWarning("Could not deserialize request headers from binding data");
             return false;
         }
 
         headers = new(headersDict, StringComparer.OrdinalIgnoreCase);
 
         if (!headers.TryGetValue("AppServiceAuthSession", out token))
+        {
+            logger.LogWarning("Did not find expected AppServiceAuthSession header value");
             return false;
+        }
 
         return true;
     }

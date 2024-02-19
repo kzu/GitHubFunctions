@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker;
 using System.Security.Claims;
-using System.Net;
 
 namespace Auth0Functions;
 
@@ -16,7 +15,10 @@ public class Function(ILogger<Function> logger)
 
         var feature = context.Features.Get<PrincipalFeature>();
         if (feature?.Principal.Identity?.IsAuthenticated != true)
-            return new UnauthorizedResult();
+        {
+            return new OkObjectResult($"Not authenticated :(" + string.Join(Environment.NewLine,
+                req.Headers.Select(x => $"{x.Key} = {x.Value}")));
+        }
 
         var user = feature.Principal;
 
