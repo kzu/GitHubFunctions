@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "Auth0Functions": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7110",
+      "launchBrowser": false
+    }
+  }
+}
