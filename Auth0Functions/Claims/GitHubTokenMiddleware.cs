@@ -30,7 +30,7 @@ public class GitHubTokenMiddleware(IHttpClientFactory httpFactory) : IFunctionsW
             // CLI auth using device flow
             using var http = httpFactory.CreateClient();
             // TODO: use ThisAssembly for product info
-            http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("SponsorLink", "0.2"));
+            http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("DSL", "0.2"));
             http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", auth);
             var resp = await http.GetAsync("https://api.github.com/user");
 
