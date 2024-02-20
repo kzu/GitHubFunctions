@@ -35,9 +35,7 @@ public class ClientPrincipalMiddleware : IFunctionsWorkerMiddleware
             return;
         }
 
-        context.Features.Set(ClaimsFeature.Default);
         await next(context);
-        return;
     }
 
     record ClientClaim(string typ, string val);

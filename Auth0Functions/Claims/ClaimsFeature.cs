@@ -7,8 +7,6 @@
 /// </summary>
 public class ClaimsFeature(ClaimsPrincipal principal, string? accessToken = default)
 {
-    public static ClaimsFeature Default { get; } = new(new ClaimsPrincipal(new ClaimsIdentity()), default);
-
     public ClaimsPrincipal Principal => principal;
 
     /// <summary>

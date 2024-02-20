@@ -67,7 +67,6 @@ public class GitHubTokenMiddleware(IHttpClientFactory httpFactory) : IFunctionsW
             }
         }
 
-        context.Features.Set(ClaimsFeature.Default);
         await next(context);
         return;
     }
