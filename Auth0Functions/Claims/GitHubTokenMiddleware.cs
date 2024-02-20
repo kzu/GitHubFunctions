@@ -3,6 +3,8 @@ using Microsoft.Azure.Functions.Worker;
 using System.Net.Http.Headers;
 using System.Net;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace System.Security.Claims;
 
@@ -30,8 +32,9 @@ public class GitHubTokenMiddleware(IHttpClientFactory httpFactory) : IFunctionsW
             // TODO: use ThisAssembly for product info
             http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("SponsorLink", "0.2"));
             http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", auth);
-            
-            if (await http.GetAsync("https://api.github.com/user") is { StatusCode: HttpStatusCode.OK, Content: { } content })
+            var resp = await http.GetAsync("https://api.github.com/user");
+
+            if (resp is { StatusCode: HttpStatusCode.OK, Content: { } content })
             {
                 var gh = await content.ReadAsStringAsync();
                 var claims = new List<Claim>();
@@ -52,6 +55,15 @@ public class GitHubTokenMiddleware(IHttpClientFactory httpFactory) : IFunctionsW
 
                 await next(context);
                 return;
+            } 
+            else 
+            {
+                var error = await resp.Content.ReadAsStringAsync();
+                if (string.IsNullOrEmpty(error))
+                    error = resp.ReasonPhrase;
+
+                context.InstanceServices.GetRequiredService<ILogger<GitHubTokenMiddleware>>()
+                    .LogWarning("Failed to authenticate with GitHub: " + error);
             }
         }
 
