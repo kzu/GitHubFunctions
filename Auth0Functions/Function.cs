@@ -27,8 +27,13 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
         {
             // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
             // or the token-based principal population won't work.
-            if (configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
+            // Never redirect requests for JSON/JWT, as they are likely from a CLI or other non-browser client.
+            if (!req.Headers.Accept.Contains("application/json") &&
+                !req.Headers.Accept.Contains("application/jwt") &&
+                configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
+            {
                 return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
+            }
 
             // Otherwise, just return a 401 with the headers for debugging.
             return new UnauthorizedObjectResult($"Not authenticated :(" +
