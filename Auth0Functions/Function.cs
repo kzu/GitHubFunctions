@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Azure.Functions.Worker;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Auth0Functions;
 
 public class Function(ILogger<Function> logger)
 {
+    [Authorize]
     [Function("echo")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req, FunctionContext context)
     {
