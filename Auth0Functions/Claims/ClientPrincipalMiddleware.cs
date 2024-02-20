@@ -11,6 +11,12 @@ public class ClientPrincipalMiddleware : IFunctionsWorkerMiddleware
 
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
+        if (context.Features.Get<ClaimsFeature>() is not null)
+        {
+            await next(context);
+            return;
+        }
+
         var req = await context.GetHttpRequestDataAsync();
         if (req is not null &&
             req.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value), StringComparer.OrdinalIgnoreCase) is var headers &&

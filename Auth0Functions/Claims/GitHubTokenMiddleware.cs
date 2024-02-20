@@ -12,6 +12,12 @@ public class GitHubTokenMiddleware(IHttpClientFactory httpFactory) : IFunctionsW
 
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
+        if (context.Features.Get<ClaimsFeature>() is not null)
+        {
+            await next(context);
+            return;
+        }
+
         var req = await context.GetHttpRequestDataAsync();
         if (req is not null &&
             req.Headers.TryGetValues("Authorization", out var values) && 
