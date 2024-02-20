@@ -18,7 +18,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
 
         foreach (var entry in configuration.AsEnumerable().OrderBy(x => x.Key))
         {
-            logger.LogInformation("{Key} = {Value}", entry.Key, entry.Value);
+            logger.LogTrace("{Key} = {Value}", entry.Key, entry.Value);
         }
 
         var feature = context.Features.Get<PrincipalFeature>();
