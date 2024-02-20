@@ -4,16 +4,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace Auth0Functions;
 
-public class Function(ILogger<Function> logger)
+public class Function(ILogger<Function> logger, IConfiguration configuration)
 {
     [Function("sync")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext context)
     {
         logger.LogInformation("C# HTTP trigger function processed a request.");
+
+        foreach (var entry in configuration.AsEnumerable().OrderBy(x => x.Key))
+        {
+            logger.LogInformation("{Key} = {Value}", entry.Key, entry.Value);
+        }
 
         var feature = context.Features.Get<PrincipalFeature>();
         var principal = feature?.Principal ?? req.HttpContext.User;
