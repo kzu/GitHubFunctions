@@ -1,17 +1,17 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
-using Microsoft.Azure.Functions.Worker;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Extensions.Logging;
 
 namespace Auth0Functions;
 
 public class Function(ILogger<Function> logger)
 {
-    [Authorize]
-    [Function("echo")]
-    public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req, FunctionContext context)
+    [Function("sync")]
+    public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext context)
     {
         logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -20,9 +20,9 @@ public class Function(ILogger<Function> logger)
 
         if (principal.Identity?.IsAuthenticated != true)
         {
-            return new OkObjectResult($"Not authenticated :(" +
-            "\r\n\r\n-- Headers --\r\n" +
-            string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
+            return new UnauthorizedObjectResult($"Not authenticated :(" +
+                "\r\n\r\n-- Headers --\r\n" +
+                string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
         }
 
         return new OkObjectResult($"Welcome to Azure Functions!" +
@@ -30,6 +30,5 @@ public class Function(ILogger<Function> logger)
             string.Join(Environment.NewLine, principal.Claims.Select(x => $"{x.Type} = {x.Value}")) +
             "\r\n\r\n-- Headers --\r\n" +
             string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
-
     }
 }

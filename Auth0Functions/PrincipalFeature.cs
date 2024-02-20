@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Middleware;
@@ -23,7 +25,7 @@ public class PrincipalFeature(ClaimsPrincipal principal, string? accessToken = d
     public string? AccessToken => accessToken;
 }
 
-public class PrincipalMiddleware(ILogger<PrincipalMiddleware> logger) : IFunctionsWorkerMiddleware
+public class PrincipalMiddleware(IHttpClientFactory httpFactory, ILogger<PrincipalMiddleware> logger) : IFunctionsWorkerMiddleware
 {
     static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
     static readonly ClaimsPrincipal empty = new(new ClaimsIdentity());
@@ -31,28 +33,59 @@ public class PrincipalMiddleware(ILogger<PrincipalMiddleware> logger) : IFunctio
     public async Task Invoke(FunctionContext context, FunctionExecutionDelegate next)
     {
         var req = await context.GetHttpRequestDataAsync();
-        if (req is not null && 
-            req.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value), StringComparer.OrdinalIgnoreCase) is var headers && 
-            headers.TryGetValue("host", out var host) && 
-            headers.TryGetValue("x-ms-client-principal", out var msclient) &&
-            Convert.FromBase64String(msclient) is var decoded && 
-            Encoding.UTF8.GetString(decoded) is var json &&
-            JsonSerializer.Deserialize<ClientPrincipal>(json, options) is { } cp)
+        if (req is not null &&
+            req.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value), StringComparer.OrdinalIgnoreCase) is var headers)
         {
-            var access_token = headers.TryGetValue($"x-ms-token-{cp.auth_typ}-access-token", out var token) ? token : default;
-            var principal = new ClaimsPrincipal(new ClaimsIdentity(
-                cp.claims.Select(c => new Claim(c.typ, c.val)),
-                cp.auth_typ));
-
-            context.Features.Set(new PrincipalFeature(principal, access_token));
-            await next(context);
-            return;
-        }
-        else if (req is not null)
-        {
-            foreach (var header in req.Headers)
+            if (headers.TryGetValue("x-ms-client-principal", out var msclient) &&
+                Convert.FromBase64String(msclient) is var decoded &&
+                Encoding.UTF8.GetString(decoded) is var json &&
+                JsonSerializer.Deserialize<ClientPrincipal>(json, options) is { } cp)
             {
-                logger.LogDebug("{Header} = {Value}", header.Key, string.Join(',', header.Value));
+                var access_token = headers.TryGetValue($"x-ms-token-{cp.auth_typ}-access-token", out var token) ? token : default;
+                var principal = new ClaimsPrincipal(new ClaimsIdentity(
+                    cp.claims.Select(c => new Claim(c.typ, c.val)),
+                    cp.auth_typ));
+
+                context.Features.Set(new PrincipalFeature(principal, access_token));
+                await next(context);
+                return;
+            }
+            else if (headers.TryGetValue("authorization", out var auth))
+            {
+                // CLI auth using device flow
+                using var http = httpFactory.CreateClient();
+                http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("SponsorLink", "0.1"));
+                http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", auth);
+                var resp = await http.GetAsync("https://api.github.com/user");
+                var body = await resp.Content.ReadAsStringAsync();
+                if (await http.GetAsync("https://api.github.com/user") is { StatusCode: HttpStatusCode.OK, Content: { } content })
+                {
+                    var gh = await content.ReadAsStringAsync();
+                    var claims = new List<Claim>();
+                    var doc = JsonDocument.Parse(gh);
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind != JsonValueKind.Object && 
+                            prop.Value.ValueKind != JsonValueKind.Array &&
+                            prop.Value.ToString() is { Length: > 0 } value)
+                        {
+                            claims.Add(new Claim(prop.Name, value));
+                        }
+                    }
+
+                    context.Features.Set(new PrincipalFeature(new ClaimsPrincipal(
+                        new ClaimsIdentity(claims, "github"))));
+
+                    await next(context);
+                    return;
+                }
+            }
+            else
+            {
+                foreach (var header in headers)
+                {
+                    logger.LogDebug("{Header} = {Value}", header.Key, header.Value);
+                }
             }
         }
 
