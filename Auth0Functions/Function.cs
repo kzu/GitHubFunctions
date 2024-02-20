@@ -1,8 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -37,6 +37,29 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
                 string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
         }
 
+        if (req.Headers.Accept.Contains("application/json"))
+        {
+            return new JsonResult(principal.Claims.ToDictionary(x => x.Type, x => x.Value)) { StatusCode = 200 };
+        }
+        else if (req.Headers.Accept.Contains("application/jwt"))
+        {
+            var token = new JwtSecurityToken(
+                // audience: audience,
+                // issuer: issuer,
+                // signingCredentials: private key...
+                claims: principal.Claims
+            );
+
+            var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return new ContentResult 
+            {
+                Content = jwt, 
+                ContentType = "application/jwt",
+                StatusCode = 200
+            };
+        }
+        
         return new OkObjectResult($"Welcome to Azure Functions!" +
             "\r\n\r\n-- Claims --\r\n" +
             string.Join(Environment.NewLine, principal.Claims.Select(x => $"{x.Type} = {x.Value}")) +
