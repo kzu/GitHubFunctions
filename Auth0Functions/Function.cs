@@ -26,6 +26,12 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
 
         if (principal.Identity?.IsAuthenticated != true)
         {
+            // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
+            // or the token-based principal population won't work.
+            if (configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
+                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
+
+            // Otherwise, just return a 401 with the headers for debugging.
             return new UnauthorizedObjectResult($"Not authenticated :(" +
                 "\r\n\r\n-- Headers --\r\n" +
                 string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
