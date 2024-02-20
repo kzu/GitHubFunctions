@@ -17,16 +17,16 @@ public class Function(ILogger<Function> logger)
         if (feature?.Principal.Identity?.IsAuthenticated != true)
         {
             return new OkObjectResult($"Not authenticated :(" +
-            Environment.NewLine + "-- Headers --" + Environment.NewLine +
+            "\r\n\r\n-- Headers --\r\n" +
             string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
         }
 
         var user = feature.Principal;
 
         return new OkObjectResult($"Welcome to Azure Functions!" + 
-            Environment.NewLine + "-- Claims --" + Environment.NewLine + 
+            "\r\n\r\n-- Claims --\r\n" + 
             string.Join(Environment.NewLine, user.Claims.Select(x => $"{x.Type} = {x.Value}")) +
-            Environment.NewLine + "-- Headers --" + Environment.NewLine +
+            "\r\n\r\n-- Headers --\r\n" +
             string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
     }
 }

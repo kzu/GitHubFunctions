@@ -12,7 +12,12 @@ public class ErrorMiddleware : IFunctionsWorkerMiddleware
         }
         catch (Exception e)
         {
-            context.GetLogger<ErrorMiddleware>().LogError(e, "Exception: {Exception}", e.ToString());
+            var logger = context.GetLogger<ErrorMiddleware>();
+#if DEBUG
+            logger.LogError(e, "Exception: {Exception}", e.ToString());
+#else
+            logger.LogError(e, "Exception: {Exception}", e.Message);
+#endif
             throw;
         }
     }
