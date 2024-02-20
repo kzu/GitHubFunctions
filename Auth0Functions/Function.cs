@@ -38,7 +38,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
             return new UnauthorizedObjectResult(new
             {
                 status = "401: Unauthorized",
-                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value)
+                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"'))
             });
         }
 
@@ -65,7 +65,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
             return new JsonResult(new
             {
                 claims = principal.Claims.ToDictionary(x => x.Type, x => x.Value),
-                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value)
+                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"'))
             })
             { 
                 StatusCode = 200 
