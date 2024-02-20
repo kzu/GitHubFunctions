@@ -7,14 +7,14 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(builder =>
     {
         builder.UseMiddleware<ErrorMiddleware>();
-        builder.UseMiddleware<PrincipalMiddleware>();
+        builder.UseMiddleware<ClientPrincipalMiddleware>();
+        builder.UseMiddleware<GitHubTokenMiddleware>();
     })
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddHttpClient();
-        
     })
     .Build();
 

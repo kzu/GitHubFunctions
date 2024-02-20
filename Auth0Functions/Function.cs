@@ -2,7 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -21,7 +20,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
             logger.LogTrace("{Key} = {Value}", entry.Key, entry.Value);
         }
 
-        var feature = context.Features.Get<PrincipalFeature>();
+        var feature = context.Features.Get<ClaimsFeature>();
         var principal = feature?.Principal ?? req.HttpContext.User;
 
         if (principal.Identity?.IsAuthenticated != true)
