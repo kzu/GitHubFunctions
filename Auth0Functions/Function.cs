@@ -27,25 +27,22 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
         {
             // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
             // or the token-based principal population won't work.
-            // Never redirect requests for JSON/JWT, as they are likely from a CLI or other non-browser client.
-            if (!req.Headers.Accept.Contains("application/json") &&
-                !req.Headers.Accept.Contains("application/jwt") &&
+            // Never redirect requests for JWT, as they are likely from a CLI or other non-browser client.
+            if (!req.Headers.Accept.Contains("application/jwt") &&
                 configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
             {
                 return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
             }
 
             // Otherwise, just return a 401 with the headers for debugging.
-            return new UnauthorizedObjectResult($"Not authenticated :(" +
-                "\r\n\r\n-- Headers --\r\n" +
-                string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
+            return new UnauthorizedObjectResult(new
+            {
+                status = "401: Unauthorized",
+                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value)
+            });
         }
 
-        if (req.Headers.Accept.Contains("application/json"))
-        {
-            return new JsonResult(principal.Claims.ToDictionary(x => x.Type, x => x.Value)) { StatusCode = 200 };
-        }
-        else if (req.Headers.Accept.Contains("application/jwt"))
+        if (req.Headers.Accept.Contains("application/jwt"))
         {
             var token = new JwtSecurityToken(
                 // audience: audience,
@@ -63,11 +60,16 @@ public class Function(ILogger<Function> logger, IConfiguration configuration)
                 StatusCode = 200
             };
         }
-        
-        return new OkObjectResult($"Welcome to Azure Functions!" +
-            "\r\n\r\n-- Claims --\r\n" +
-            string.Join(Environment.NewLine, principal.Claims.Select(x => $"{x.Type} = {x.Value}")) +
-            "\r\n\r\n-- Headers --\r\n" +
-            string.Join(Environment.NewLine, req.Headers.Select(x => $"{x.Key} = {x.Value}")));
+        else
+        {
+            return new JsonResult(new
+            {
+                claims = principal.Claims.ToDictionary(x => x.Type, x => x.Value),
+                headers = req.Headers.ToDictionary(x => x.Key, x => x.Value)
+            })
+            { 
+                StatusCode = 200 
+            };               
+        }
     }
 }
