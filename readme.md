@@ -52,3 +52,7 @@ The function app highlights how to perform a web-based authentication flow by de
 and redirecting just like the `Require authenticated user` setting does. A pair of function middleware 
 classes take care of populating the claims in both scenarios so that the function app can depend generically 
 on just the `ClaimsFeature` that's added to the `FunctionContext.Features`.
+
+The sample also showcases leveraging the `ClaimsPrincipal.ClaimsPrincipalSelector` to set the 
+authenticated user automatically so that functions can basically just depend on `ClaimsPrincipal.Current` 
+throughout.

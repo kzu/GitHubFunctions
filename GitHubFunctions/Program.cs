@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(builder =>
     {
+        // Allows access to the function context from scoped DI components.
         builder.UseFunctionContextAccessor();
         // Logs errors
         builder.UseMiddleware<ErrorMiddleware>();
@@ -32,5 +33,10 @@ var host = new HostBuilder()
         }).AddHttpMessageHandler<ClaimsMessageHandler>();
     })
     .Build();
+
+// Leverage the function context accessor to provide the current principal, if available.
+ClaimsPrincipal.ClaimsPrincipalSelector = () =>
+    host.Services.GetRequiredService<IFunctionContextAccessor>().FunctionContext?.Features.Get<ClaimsFeature>()?.Principal ??
+    new ClaimsPrincipal(new ClaimsIdentity());
 
 host.Run();

@@ -10,4 +10,6 @@ if (args.Length == 0)
     args = [clientId];
 }
 
-return await app.RunAsync(args);
+await app.RunAsync(args);
+
+Console.ReadLine();

@@ -12,12 +12,9 @@ namespace GitHubFunctions;
 public class Function(ILogger<Function> logger, IConfiguration configuration, IHttpClientFactory httpFactory)
 {
     [Function("me")]
-    public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext context)
+    public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
     {
-        var feature = context.Features.Get<ClaimsFeature>();
-        var principal = feature?.Principal ?? req.HttpContext.User;
-
-        if (principal.Identity?.IsAuthenticated != true)
+        if (ClaimsPrincipal.Current is not { Identity.IsAuthenticated: true })
         {
             // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
             // or the token-based principal population won't work.
@@ -34,6 +31,8 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
             return new UnauthorizedResult();
         }
 
+        // NOTE: the 'user' HTTP client is configured to automatically retrieve the authenticated user 
+        // access token that was populated in the context feature.
         using var http = httpFactory.CreateClient("user");
         var response = await http.GetAsync("https://api.github.com/user");
 
