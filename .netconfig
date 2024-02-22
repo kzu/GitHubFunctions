@@ -18,3 +18,8 @@
 	sha = 0683ee777d7d878d4bf013d7deea352685135a05
 	etag = 2c6335b37e4ae05eea7c01f5d0c9d82b49c488f868a8b5ba7bff7c6ff01f3994
 	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/Worker/FunctionContextAccessor.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/Worker/FunctionContextAccessor.cs
+	sha = 91ea14062eb6ac6b9dc85d41b90fdbb56c46efbf
+	etag = 3d9f39632c0a896dea7aa0cebcef77a7b668fdedfd8d2c8bf79826fa3a85121f
+	weak

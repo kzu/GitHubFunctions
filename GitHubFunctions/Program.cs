@@ -7,20 +7,24 @@ using Microsoft.Extensions.Hosting;
 var host = new HostBuilder()
     .ConfigureFunctionsWebApplication(builder =>
     {
-        builder.UseMiddleware<FunctionContextAccessorMiddleware>();
+        builder.UseFunctionContextAccessor();
+        // Logs errors
         builder.UseMiddleware<ErrorMiddleware>();
+        // Web-flow auth middleware
         builder.UseMiddleware<ClientPrincipalMiddleware>();
+        // Api/device flow auth middleware
         builder.UseMiddleware<GitHubTokenMiddleware>();
     })
     .ConfigureServices(services =>
     {
-        services.AddHttpContextAccessor();
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
-        services.AddSingleton<IFunctionContextAccessor, FunctionContextAccessor>();
-        services.AddScoped<ClaimsMessageHandler>();
 
         services.AddHttpClient();
+
+        // Message handler that passes down current function invocation token 
+        // to http client requests
+        services.AddScoped<ClaimsMessageHandler>();
         services.AddHttpClient("user", http =>
         {
             http.BaseAddress = new Uri("https://api.github.com");
