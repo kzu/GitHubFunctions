@@ -26,7 +26,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
             if (!req.Headers.Accept.Contains("application/jwt") &&
                 configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
             {
-                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
+                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&scope=read:user%20read:org&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
             }
 
             // Otherwise, just 401
@@ -69,7 +69,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
             if (!req.Headers.Accept.Contains("application/jwt") &&
                 configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
             {
-                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
+                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&scope=read:user%20read:org&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
             }
 
             // Otherwise, just return a 401 with the headers for debugging.

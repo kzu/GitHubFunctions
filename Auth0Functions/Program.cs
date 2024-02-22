@@ -14,6 +14,7 @@ var host = new HostBuilder()
     })
     .ConfigureServices(services =>
     {
+        services.AddHttpContextAccessor();
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
         services.AddSingleton<IFunctionContextAccessor, FunctionContextAccessor>();
