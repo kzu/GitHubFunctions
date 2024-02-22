@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Http.Json;
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -8,8 +10,44 @@ using Microsoft.Extensions.Logging;
 
 namespace Auth0Functions;
 
-public class Function(ILogger<Function> logger, IConfiguration configuration)
+public class Function(ILogger<Function> logger, IConfiguration configuration, IHttpClientFactory httpFactory)
 {
+    [Function("me")]
+    public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext context)
+    {
+        var feature = context.Features.Get<ClaimsFeature>();
+        var principal = feature?.Principal ?? req.HttpContext.User;
+
+        if (principal.Identity?.IsAuthenticated != true)
+        {
+            // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
+            // or the token-based principal population won't work.
+            // Never redirect requests for JWT, as they are likely from a CLI or other non-browser client.
+            if (!req.Headers.Accept.Contains("application/jwt") &&
+                configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
+            {
+                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/sync");
+            }
+
+            // Otherwise, just 401
+            return new UnauthorizedResult();
+        }
+
+        using var http = httpFactory.CreateClient("user");
+        var response = await http.GetAsync("https://api.github.com/user");
+
+        return new JsonResult(new
+        {
+            request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
+            response = response.Headers.ToDictionary(x => x.Key, x => x.Value?.ToString()?.Trim('"')),
+            payload = await response.Content.ReadFromJsonAsync<JsonElement>()
+        })
+        {
+            StatusCode = (int)response.StatusCode
+        };
+    }
+
+
     [Function("sync")]
     public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req, FunctionContext context)
     {
