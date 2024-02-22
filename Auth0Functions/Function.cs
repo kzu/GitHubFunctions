@@ -38,9 +38,9 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
 
         return new JsonResult(new
         {
+            body = await response.Content.ReadFromJsonAsync<JsonElement>(),
             request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
             response = response.Headers.ToDictionary(x => x.Key, x => x.Value?.ToString()?.Trim('"')),
-            payload = await response.Content.ReadFromJsonAsync<JsonElement>()
         })
         {
             StatusCode = (int)response.StatusCode
