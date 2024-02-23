@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Headers;
-using System.Security.Claims;
+using GitHubFunctions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -11,32 +11,27 @@ var host = new HostBuilder()
         builder.UseFunctionContextAccessor();
         // Logs errors
         builder.UseMiddleware<ErrorMiddleware>();
-        // Web-flow auth middleware
-        builder.UseMiddleware<ClientPrincipalMiddleware>();
+
+        // Populates the current principal from X-MS-CLIENT-PRINCIPAL
+        builder.UseAppServiceAuthentication();
         // Api/device flow auth middleware
-        builder.UseMiddleware<GitHubTokenMiddleware>();
+        builder.UseGitHubAuthentication();
+        // Adds the current principal from either from above
+        builder.UseClaimsPrincipal();
     })
     .ConfigureServices(services =>
     {
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();
 
-        services.AddHttpClient();
-
-        // Message handler that passes down current function invocation token 
-        // to http client requests
-        services.AddScoped<ClaimsMessageHandler>();
+        // Message handler that passes down current auth token (if any) to http client requests
+        services.AddScoped<AccessTokenMessageHandler>();
         services.AddHttpClient("user", http =>
         {
             http.BaseAddress = new Uri("https://api.github.com");
             http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GitHubFunctions", "1.0"));
-        }).AddHttpMessageHandler<ClaimsMessageHandler>();
+        }).AddHttpMessageHandler<AccessTokenMessageHandler>();
     })
     .Build();
-
-// Leverage the function context accessor to provide the current principal, if available.
-ClaimsPrincipal.ClaimsPrincipalSelector = () =>
-    host.Services.GetRequiredService<IFunctionContextAccessor>().FunctionContext?.Features.Get<ClaimsFeature>()?.Principal ??
-    new ClaimsPrincipal(new ClaimsIdentity());
 
 host.Run();
