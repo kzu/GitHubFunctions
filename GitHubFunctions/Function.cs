@@ -40,7 +40,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         {
             body = await response.Content.ReadFromJsonAsync<JsonElement>(),
             request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
-            response = response.Headers.ToDictionary(x => x.Key, x => x.Value?.ToString()?.Trim('"')),
+            response = response.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value)),
         })
         {
             StatusCode = (int)response.StatusCode
