@@ -35,8 +35,8 @@
 	weak
 [file "GitHubFunctions/Microsoft/Azure/Functions/AppServiceGitHubAuthenticationExtension.cs"]
 	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AppServiceGitHubAuthenticationExtension.cs
-	sha = c879968ad5a3df153f74fff8831951d75e634e68
-	etag = f1a4908cb0bb69682228b725627d295d80fcaee6118ae6b6d7676ba3476567e7
+	sha = 522c531880d390b606209a693c963041c24df593
+	etag = 88d0254403b227f0b5e81dd7e473b06478bba2f38dabbbfa027cef6a05948719
 	weak
 [file "GitHubFunctions/Microsoft/Azure/Functions/AccessTokenMessageHandler.cs"]
 	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AccessTokenMessageHandler.cs
