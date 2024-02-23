@@ -1,5 +1,4 @@
 ﻿using System.Net.Http.Headers;
-using GitHubFunctions;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -29,7 +28,7 @@ var host = new HostBuilder()
         services.AddHttpClient("user", http =>
         {
             http.BaseAddress = new Uri("https://api.github.com");
-            http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GitHubFunctions", "1.0"));
+            http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(ThisAssembly.Info.Product, ThisAssembly.Info.InformationalVersion));
         }).AddHttpMessageHandler<AccessTokenMessageHandler>();
     })
     .Build();
