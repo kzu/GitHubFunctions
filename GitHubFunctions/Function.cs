@@ -24,7 +24,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
             if (!req.Headers.Accept.Contains("application/json") &&
                 configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"] is { Length: > 0 } clientId)
             {
-                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&scope=read:user%20read:org&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/me");
+                return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&scope=read:user%20read:org%20user:email&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/me");
             }
 
             logger.LogWarning("Ensure WEBSITE_AUTH_GITHUB_CLIENT_ID configuration is present.");
