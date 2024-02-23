@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
@@ -36,9 +37,13 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         using var http = httpFactory.CreateClient("user");
         var response = await http.GetAsync("https://api.github.com/user");
 
+        var emails = await http.GetFromJsonAsync<JsonArray>("https://api.github.com/user/emails");  
+        var body = await response.Content.ReadFromJsonAsync<JsonObject>();
+        body?.Add("emails", emails);
+
         return new JsonResult(new
         {
-            body = await response.Content.ReadFromJsonAsync<JsonElement>(),
+            body,
             claims = principal.Claims.ToDictionary(x => x.Type, x => x.Value),
             request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
             response = response.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value)),
