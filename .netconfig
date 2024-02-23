@@ -23,3 +23,18 @@
 	sha = 91ea14062eb6ac6b9dc85d41b90fdbb56c46efbf
 	etag = 3d9f39632c0a896dea7aa0cebcef77a7b668fdedfd8d2c8bf79826fa3a85121f
 	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/AppServiceAuthenticationExtensions.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AppServiceAuthenticationExtensions.cs
+	sha = 54bc673ff259a49c4079567d40e8a0a70f69288e
+	etag = ee878c6dc1dde32a357f937ca24e7a9347450a6d79402fc4ff47ab0180b5b78b
+	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/AppServiceClaimsPrincipalExtensions.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AppServiceClaimsPrincipalExtensions.cs
+	sha = e03419d4e018d935435bae008114bd0a01a00646
+	etag = cae33514d3f546852b508ab5443736bab4d8aa34261ae5ca6ace9fa59e0ec086
+	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/AppServiceGitHubAuthenticationExtension.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AppServiceGitHubAuthenticationExtension.cs
+	sha = 2a362c40b2652c9393c1206178f36837cbe2efb2
+	etag = 7abc4e1c516777a2c388ebbc33ffe1050863655e84eb3edb2ada99b43b198b8f
+	weak
