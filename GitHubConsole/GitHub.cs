@@ -18,6 +18,10 @@ public partial class RunCommand : AsyncCommand<RunCommand.Settings>
         [Description("Your GitHub OAuth app's Client ID")]
         [CommandArgument(0, "<client-id>")]
         public required string ClientId { get; set; }
+
+        [Description("Force re-authentication")]
+        [CommandOption("-f|--force")]
+        public bool Force { get; set; }
     }
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
@@ -30,7 +34,7 @@ public partial class RunCommand : AsyncCommand<RunCommand.Settings>
 
         var http = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false });
         http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GitHubFunctions", "0.1"));
+        http.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(ThisAssembly.Info.Product, ThisAssembly.Info.InformationalVersion));
 
         if (Debugger.IsAttached)
             http.Timeout = TimeSpan.FromMinutes(10);
@@ -47,23 +51,23 @@ public partial class RunCommand : AsyncCommand<RunCommand.Settings>
         {
             // Try using the creds to see if they are still valid.
             var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user");
-            request.Headers.TryAddWithoutValidation("Authorization", "Bearer " + creds.Password);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", creds.Password);
             if (await http.SendAsync(request) is HttpResponseMessage { IsSuccessStatusCode: true } response)
             {
                 var user = await response.Content.ReadFromJsonAsync<JsonElement>();
                 AnsiConsole.MarkupLine($"[green]Logged in as[/]: {user.GetProperty("login").GetString()}");
 
                 // Add the creds to the default headers in the http client for subsequent requests.
-                http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + creds.Password);
+                http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", creds.Password);
                 authenticate = false;
             }
         }
 
-        if (authenticate)
+        if (authenticate || settings.Force)
         {
             // Perform device flow auth. See https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
 
-            var codeUrl = $"https://github.com/login/device/code?client_id={settings.ClientId}&scope=read:user,read:org";
+            var codeUrl = $"https://github.com/login/device/code?client_id={settings.ClientId}&scope=read:user,user:email,read:org";
             var auth = await(await http.PostAsync(codeUrl, null)).Content.ReadFromJsonAsync<Auth>(options);
             
             // Render the auth response as JSON to console, user should copy the code to paste on the URL in the browser
@@ -103,7 +107,7 @@ public partial class RunCommand : AsyncCommand<RunCommand.Settings>
             } while (code.error != null);
 
             // At this point, we should have a valid access token with the right scopes.
-            http.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", "Bearer " + code.access_token);
+            http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", code.access_token);
             store.AddOrUpdate("https://github.com", settings.ClientId, code.access_token);
         }
 

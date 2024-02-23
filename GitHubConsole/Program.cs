@@ -10,6 +10,10 @@ if (args.Length == 0)
     args = [clientId];
 }
 
-await app.RunAsync(args);
-
-Console.ReadLine();
+while (true)
+{
+    await app.RunAsync(args);
+    AnsiConsole.MarkupLine("Press [green]Enter[/] to authenticate again, or any other key to exit.");
+    if (Console.ReadKey().Key != ConsoleKey.Enter)
+        break;
+}

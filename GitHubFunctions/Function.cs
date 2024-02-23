@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace GitHubFunctions;
 
@@ -41,10 +42,14 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         var body = await response.Content.ReadFromJsonAsync<JsonObject>();
         body?.Add("emails", emails);
 
+        //var values = new StringValues()
+
         return new JsonResult(new
         {
             body,
-            claims = principal.Claims.ToDictionary(x => x.Type, x => x.Value),
+            claims = principal.Claims.GroupBy(x => x.Type)
+                .Select(g => new { g.Key, Value = (object)(g.Count() == 1 ? g.First().Value : g.Select(x => x.Value).ToArray()) })
+                .ToDictionary(x => x.Key, x => x.Value),
             request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
             response = response.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value)),
         })
