@@ -14,7 +14,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
     [Function("me")]
     public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
     {
-        if (ClaimsPrincipal.Current is not { Identity.IsAuthenticated: true })
+        if (ClaimsPrincipal.Current is not { Identity.IsAuthenticated: true } principal)
         {
             // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
             // or the token-based principal population won't work.
@@ -39,6 +39,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         return new JsonResult(new
         {
             body = await response.Content.ReadFromJsonAsync<JsonElement>(),
+            claims = principal.Claims.ToDictionary(x => x.Type, x => x.Value),
             request = req.Headers.ToDictionary(x => x.Key, x => x.Value.ToString().Trim('"')),
             response = response.Headers.ToDictionary(x => x.Key, x => string.Join(',', x.Value)),
         })
