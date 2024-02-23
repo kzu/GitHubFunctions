@@ -9,7 +9,7 @@ var host = new HostBuilder()
         // Allows access to the function context from scoped DI components.
         builder.UseFunctionContextAccessor();
         // Logs errors
-        builder.UseMiddleware<ErrorMiddleware>();
+        builder.UseErrorLogging();
 
         // Populates the current principal from X-MS-CLIENT-PRINCIPAL
         builder.UseAppServiceAuthentication();

@@ -43,3 +43,8 @@
 	sha = e743b4c9c05024ebf97c8204ff26d50869a17689
 	etag = 1d569764eb9208340b02b18e5515f2f89faeefe20b9e7134832e53ec5a393553
 	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/ErrorLoggingMiddleware.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/ErrorLoggingMiddleware.cs
+	sha = 2e84192eea07ecc84d5c15fca6f48f3a7e29bb59
+	etag = 966d76b2bfff876a7805d794d43e7bfdee18fe8ae64b73979da23bb27bac21b7
+	weak
