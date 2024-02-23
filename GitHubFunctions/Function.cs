@@ -42,8 +42,6 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         var body = await response.Content.ReadFromJsonAsync<JsonObject>();
         body?.Add("emails", emails);
 
-        //var values = new StringValues()
-
         return new JsonResult(new
         {
             body,
