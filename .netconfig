@@ -38,3 +38,8 @@
 	sha = 2a362c40b2652c9393c1206178f36837cbe2efb2
 	etag = 7abc4e1c516777a2c388ebbc33ffe1050863655e84eb3edb2ada99b43b198b8f
 	weak
+[file "GitHubFunctions/Microsoft/Azure/Functions/AccessTokenMessageHandler.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/Microsoft/Azure/Functions/AccessTokenMessageHandler.cs
+	sha = e743b4c9c05024ebf97c8204ff26d50869a17689
+	etag = 1d569764eb9208340b02b18e5515f2f89faeefe20b9e7134832e53ec5a393553
+	weak
