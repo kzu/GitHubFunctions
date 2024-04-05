@@ -32,8 +32,9 @@ You can try it out at https://ghauth.azurewebsites.net/me
 ## Local development
 
 You can run the function app locally, but you won't be able to replicate the web-based authentication flow, 
-since the callback URL in the GitHub will not match your production deployment. This a limitation on the GH 
-app side (Auth0 does allow multiple callback URLs, for example).
+since the callback URL in the GitHub app will not match your production deployment. This a limitation on the 
+GH app side (Auth0 does allow multiple callback URLs, for example). In addition, the function app running 
+locally, does not have the plumbing to handle the web-based auth flow that is provided by the Azure App Service.
 
 You can test the API-based device flow, however:
 
@@ -45,6 +46,7 @@ You can test the API-based device flow, however:
 4. Once autenticated, the credentials will be saved using the GCM-powered 
    [credential store](https://github.com/devlooped/CredentialManager/) and subsequent calls will verify 
    the saved token and use it to authenticate with the function app.
+
 
 ## Notes
 
