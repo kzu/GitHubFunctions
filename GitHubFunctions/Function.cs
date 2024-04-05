@@ -1,13 +1,11 @@
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace GitHubFunctions;
 
@@ -17,19 +15,16 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
     public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
     {
         var clientId = configuration["WEBSITE_AUTH_GITHUB_CLIENT_ID"];
-        if (string.IsNullOrEmpty(clientId))
-        {
-            logger.LogError("Ensure GitHub identity provider is configured for the functions app.");
-            return new StatusCodeResult(500);
-        }
 
         if (ClaimsPrincipal.Current is not { Identity.IsAuthenticated: true } principal)
         {
             // Implement manual auto-redirect to GitHub, since we cannot turn it on in the portal
             // or the token-based principal population won't work.
             // Never redirect requests for JWT, as they are likely from a CLI or other non-browser client.
-            if (!req.Headers.Accept.Contains("application/json"))
+            if (!req.Headers.Accept.Contains("application/json") && !string.IsNullOrEmpty(clientId))
                 return new RedirectResult($"https://github.com/login/oauth/authorize?client_id={clientId}&scope=read:user%20read:org%20user:email&redirect_uri=https://{req.Headers["Host"]}/.auth/login/github/callback&state=redir=/me");
+
+            logger.LogError("Ensure GitHub identity provider is configured for the functions app.");
 
             // Otherwise, just 401
             return new UnauthorizedResult();
@@ -40,7 +35,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         using var http = httpFactory.CreateClient("user");
         var response = await http.GetAsync("https://api.github.com/user");
 
-        var emails = await http.GetFromJsonAsync<JsonArray>("https://api.github.com/user/emails");  
+        var emails = await http.GetFromJsonAsync<JsonArray>("https://api.github.com/user/emails");
         var body = await response.Content.ReadFromJsonAsync<JsonObject>();
         body?.Add("emails", emails);
 
@@ -49,7 +44,8 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
                 .ToDictionary(x => x.Key, x => x.Value);
 
         // Allows the client to authenticate directly with the OAuth app if needed too.
-        claims["client_id"] = clientId; 
+        if (!string.IsNullOrEmpty(clientId))
+            claims["client_id"] = clientId;
 
         return new JsonResult(new
         {
