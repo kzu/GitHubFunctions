@@ -1,0 +1,25 @@
+﻿name: build
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+      - name: 🤘 checkout
+        uses: actions/checkout@v2
+
+      - name: 🙏 build
+        run: dotnet build ./GitHubFunctions --configuration Release --output ./output
+
+      - name: 🚀 deploy
+        if: github.ref == 'refs/heads/main'
+        uses: Azure/functions-action@v1
+        id: fa
+        with:
+          app-name: ghauth
+          package: ./output
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_8AFF030C4B274A34807D70266E0D5101 }}
