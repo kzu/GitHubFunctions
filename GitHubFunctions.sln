@@ -5,7 +5,7 @@ VisualStudioVersion = 17.10.34607.79
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHubFunctions", "GitHubFunctions\GitHubFunctions.csproj", "{668F20B7-9186-4FB3-A0A3-7AD8D3F52612}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitHubConsole", "GitHubConsole\GitHubConsole.csproj", "{88A8A652-EB2D-441F-B2B5-6D31C0ECB532}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GitHubConsole", "GitHubConsole\GitHubConsole.csproj", "{88A8A652-EB2D-441F-B2B5-6D31C0ECB532}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
