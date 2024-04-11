@@ -36,7 +36,26 @@ since the callback URL in the GitHub app will not match your production deployme
 GH app side (Auth0 does allow multiple callback URLs, for example). In addition, the function app running 
 locally, does not have the plumbing to handle the web-based auth flow that is provided by the Azure App Service.
 
-You can test the API-based device flow, however:
+In order to work around this, the functions app is configured to perform an API-based device flow and store 
+the access token as a cookie in the browser. The way to make this work is as follows:
+
+1. Add a secret containing the Client ID from the GitHub app by running this command in the function app's 
+   directory:
+
+   ```shell
+   dotnet user-secrets set "GitHub:ClientId" "your-client-id"
+   ```
+
+2. Run the functions app and watch the console for the device code and URL to authenticate with. 
+   The console will render the device code and URL to authenticate with. While you do this manually,     
+   the current function invocation will pause execution. If you take too long, it's possible for the 
+   function execution to timeout.
+
+Once you authenticate, the token will be saved in a cookie and subsequent calls will use it to authenticate.
+The rest of the flow will work just as in the case of the API/CLI-based device flow.
+
+
+You can test the API/CLI-based device flow, as follows:
 
 1. Set both the console and the functions app as startup projects.
 2. Run with F5 (with debugger). This is what causes the console app to use localhost rather than the 

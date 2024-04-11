@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 
 namespace GitHubFunctions;
 
@@ -27,7 +26,7 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
     [Function("me")]
     public async Task<IActionResult> EchoAsync([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req)
     {
-        if (!TryGetClientId(configuration, logger, out var clientId))
+        if (!configuration.TryGetClientId(logger, out var clientId))
             return new StatusCodeResult(500);
 
         if (ClaimsPrincipal.Current is not { Identity.IsAuthenticated: true } principal)
@@ -71,30 +70,6 @@ public class Function(ILogger<Function> logger, IConfiguration configuration, IH
         {
             StatusCode = (int)response.StatusCode
         };
-    }
-
-    static bool TryGetClientId(IConfiguration configuration, ILogger logger, [NotNullWhen(true)] out string? clientId)
-    {
-        clientId = null;
-        if (!bool.TryParse(configuration["WEBSITE_AUTH_ENABLED"], out var authEnabled) || !authEnabled)
-        {
-            logger.LogError("Ensure App Service authentication is enabled.");
-            return false;
-        }
-
-        if (configuration["WEBSITE_AUTH_V2_CONFIG_JSON"] is not { Length: > 0 } json ||
-            JObject.Parse(json) is not { } data ||
-            data.SelectToken("$.identityProviders.gitHub") is not { } provider ||
-            JsonSerializer.Deserialize<GitHubProvider>(provider.ToString(), new JsonSerializerOptions(JsonSerializerDefaults.Web)) is not { } github ||
-            !github.Enabled)
-        {
-            logger.LogError("Ensure GitHub identity provider is configured in App Service authentication.");
-            return false;
-        }
-
-        clientId = github.Registration.ClientId;
-
-        return !string.IsNullOrEmpty(clientId);
     }
 
     public record GitHubProvider(bool Enabled, Registration Registration);
